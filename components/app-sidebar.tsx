@@ -17,6 +17,7 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
+  IconRobot,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -32,6 +33,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useGlobalControl } from "@/components/global-control-provider"
 
 const data = {
   user: {
@@ -40,117 +42,40 @@ const data = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
-    },
-    {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
+    { title: "Dashboard / Overview", url: "/dashboard", icon: IconDashboard },
+    { title: "User Management", url: "/users", icon: IconUsers },
+    { title: "Content & Media Management", url: "/content", icon: IconFolder },
+    { title: "Session & Activity Logs", url: "/activity", icon: IconListDetails },
+    { title: "Analytics & Data Insights", url: "/analytics", icon: IconChartBar },
+    { title: "Office", url: "/office", icon: IconRobot },
+    { title: "Marketplace / Payments & Tokens", url: "/marketplace", icon: IconDatabase },
+    { title: "Marketing & Engagement", url: "/marketing", icon: IconCamera },
+    { title: "Pages Management", url: "/pages", icon: IconFileAi },
+    { title: "Content Customization / CMS", url: "/cms", icon: IconFileDescription },
+    { title: "System Settings / Configurations", url: "/settings", icon: IconSettings },
+    { title: "Reports & Export", url: "/reports", icon: IconReport },
   ],
   navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
+    { title: "Get Help", url: "/help", icon: IconHelp },
+    { title: "Search", url: "/search", icon: IconSearch },
   ],
   documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
+    { name: "Data Library", url: "#", icon: IconDatabase },
+    { name: "Word Assistant", url: "#", icon: IconFileWord },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { featureFlags } = useGlobalControl()
+
+  const items = React.useMemo(() => {
+    return data.navMain.filter((item) => {
+      const key = item.url.replace(/^\//, "") as keyof typeof featureFlags
+      if (key === "dashboard") return true
+      return featureFlags[key] !== false
+    })
+  }, [featureFlags])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -160,7 +85,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <a href="/dashboard">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Acme Inc.</span>
               </a>
@@ -169,7 +94,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={items} />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>

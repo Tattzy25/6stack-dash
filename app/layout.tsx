@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider"
+import { GlobalControlProvider } from "@/components/global-control-provider"
+import { Toaster } from "@/components/ui/sonner"
+import { MaintenanceBanner } from "@/components/maintenance-banner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +38,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <GlobalControlProvider>
+            <Toaster richColors position="top-right" />
+            <MaintenanceBanner />
+            {children}
+          </GlobalControlProvider>
         </ThemeProvider>
       </body>
     </html>
