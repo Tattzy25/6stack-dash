@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyIcon, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { useGlobalControl } from "@/components/global-control-provider"
 
 export type Transaction = { id: string; user?: string; amount?: number; currency?: string; status?: string }
@@ -44,7 +44,7 @@ export function MarketplaceManager({ transactions = [], packs = [] }: Marketplac
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No transactions</EmptyTitle>
                 <EmptyDescription>Connect payment provider to view data.</EmptyDescription>
@@ -79,7 +79,7 @@ export function MarketplaceManager({ transactions = [], packs = [] }: Marketplac
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No token packs</EmptyTitle>
                 <EmptyDescription>Create packs to sell tokens.</EmptyDescription>

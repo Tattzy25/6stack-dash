@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyIcon, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { useGlobalControl } from "@/components/global-control-provider"
 
 export type Campaign = { id: string; name?: string; status?: string }
@@ -45,7 +45,7 @@ export function MarketingManager({ campaigns = [], promos = [], feedback = [] }:
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No campaigns</EmptyTitle>
                 <EmptyDescription>Create a campaign to engage users.</EmptyDescription>
@@ -80,7 +80,7 @@ export function MarketingManager({ campaigns = [], promos = [], feedback = [] }:
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No promotions</EmptyTitle>
                 <EmptyDescription>Create a promotion to drive engagement.</EmptyDescription>
@@ -114,7 +114,7 @@ export function MarketingManager({ campaigns = [], promos = [], feedback = [] }:
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No feedback</EmptyTitle>
                 <EmptyDescription>Ask for feedback from users.</EmptyDescription>

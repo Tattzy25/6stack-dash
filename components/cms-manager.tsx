@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyIcon, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { useGlobalControl } from "@/components/global-control-provider"
 
 export type LandingPage = { id: string; title?: string }
@@ -46,7 +46,7 @@ export function CMSManager({ landing = [], carousel = [], staticContent = [], bl
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No landing pages</EmptyTitle>
                 <EmptyDescription>Create a landing page to get started.</EmptyDescription>
@@ -73,7 +73,7 @@ export function CMSManager({ landing = [], carousel = [], staticContent = [], bl
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No carousel images</EmptyTitle>
                 <EmptyDescription>Add images to the homepage carousel.</EmptyDescription>
@@ -107,7 +107,7 @@ export function CMSManager({ landing = [], carousel = [], staticContent = [], bl
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No static content</EmptyTitle>
                 <EmptyDescription>Manage site copy and legal pages.</EmptyDescription>
@@ -140,13 +140,13 @@ export function CMSManager({ landing = [], carousel = [], staticContent = [], bl
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No blog posts</EmptyTitle>
-                <EmptyDescription>Write posts to inform users.</EmptyDescription>
+                <EmptyDescription>Create posts to share news and updates.</EmptyDescription>
               </EmptyHeader>
               <div className="mt-4">
-                <Button variant="outline" onClick={() => click("blog_create")}>Create Post</Button>
+                <Button variant="outline" onClick={() => click("blog_add")}>Add Post</Button>
               </div>
             </Empty>
           )}

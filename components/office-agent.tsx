@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useRef, useState } from "react"
+import React, { useMemo, useRef, useState, useEffect } from "react"
 import { useGlobalControl } from "@/components/global-control-provider"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,7 @@ import {
   IconArrowRight,
   IconLink,
 } from "@tabler/icons-react"
+
 
 // Allowed tools registry (MVP/stub). In production this can be fetched from backend or SQL.
 const DEFAULT_ALLOWED_TOOLS = [
@@ -54,16 +55,92 @@ export function OfficeAgent() {
   const [allowedTools, setAllowedTools] = useState(DEFAULT_ALLOWED_TOOLS)
   const [safeMode, setSafeMode] = useState(true)
   const [workEnabled, setWorkEnabled] = useState(true)
-  const [workHours] = useState({ start: 8, end: 20 }) // 8am-8pm default
+  const [workHours, setWorkHours] = useState({ start: 8, end: 20 }) // 8am-8pm default
   const [pendingPlan, setPendingPlan] = useState<string[]>([])
   const [approved, setApproved] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const mediaRecorderRef = useRef<any>(null)
+  const audioChunksRef = useRef<any[]>([])
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [settings, setSettings] = useState<any>(null)
+  const [voiceAuto, setVoiceAuto] = useState(false)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("intelligence.settings")
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setSettings(parsed)
+        if (typeof parsed.safeMode === "boolean") setSafeMode(parsed.safeMode)
+        const startHour = Number(parsed?.workHours?.start?.split(":")[0]) || 8
+        const endHour = Number(parsed?.workHours?.end?.split(":")[0]) || 20
+        setWorkHours({ start: startHour, end: endHour })
+      }
+    } catch {}
+  }, [])
   const activeTools = useMemo(() => allowedTools.filter((t) => t.enabled), [allowedTools])
   const canOperateNow = workEnabled && isWorkHours(new Date(), workHours)
+  const activePersona = useMemo(() => {
+    try {
+      const personas = settings?.personas || []
+      return personas.find((p: any) => p?.active) ?? null
+    } catch {
+      return null
+    }
+  }, [settings])
 
   function append(role: "user" | "agent", text: string) {
     setMessages((m) => [...m, { role, text }])
+  }
+
+  // Safer Blob -> base64 conversion to avoid stack overflow
+  async function blobToBase64Safe(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        try {
+          const dataUrl = reader.result as string
+          const base64 = (dataUrl?.split(",")[1]) || ""
+          resolve(base64)
+        } catch (e) {
+          reject(e)
+        }
+      }
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(blob)
+    })
+  }
+
+  async function callChatLLM(userText: string) {
+    try {
+      const provider = settings?.llm?.provider || "groq"
+      const model = settings?.llm?.model || "openai/gpt-oss-120b"
+      const apiKey = provider === "groq" ? settings?.providers?.groq?.apiKey : settings?.providers?.openai?.apiKey
+      const systemPrompt = activePersona?.systemPrompt || "You are a helpful office agent."
+      const payload = {
+        provider,
+        model,
+        apiKey,
+        system: systemPrompt,
+        messages: messages.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.text })).concat([{ role: "user", content: userText }]),
+      }
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (data?.ok && data?.text) {
+        append("agent", data.text)
+      } else {
+        append("agent", `Chat failed: ${data?.error || "unknown"}`)
+      }
+    } catch (err: any) {
+      append("agent", `Chat error: ${err?.message || err}`)
+    }
   }
 
   function handleSend() {
@@ -79,11 +156,17 @@ export function OfficeAgent() {
     if (/code|fix|refactor|route|component/i.test(text)) plan.push("Prepare code edit diffs")
     if (/fetch|api|http/i.test(text)) plan.push("Fetch external data via HTTP")
     if (/notify|email|newsletter|marketing/i.test(text)) plan.push("Compose and schedule marketing content")
-    if (!plan.length) plan.push("Analyze request and ask clarifying follow-ups")
 
-    setPendingPlan(plan)
-    setApproved(false)
-    append("agent", `Proposed plan (awaiting approval):\n- ${plan.join("\n- ")}`)
+    // Only show approvals UI when there are actionable steps.
+    const actionablePlan = plan.filter((s) => s.trim().length > 0)
+    if (actionablePlan.length > 0) {
+      setPendingPlan(actionablePlan)
+      setApproved(false)
+      append("agent", `Proposed plan (awaiting approval):\n- ${actionablePlan.join("\n- ")}`)
+    }
+
+    // Send to LLM provider for actual reply
+    callChatLLM(text)
     setInput("")
   }
 
@@ -115,22 +198,208 @@ export function OfficeAgent() {
   function startListening() {
     setListening(true)
     logEvent("office:stt_start", "start")
-    append("agent", "Listening (STT placeholder). Your HTML STT component will be embedded here.")
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      const mr = new MediaRecorder(stream)
+      mediaRecorderRef.current = mr
+      audioChunksRef.current = []
+      mr.ondataavailable = (e: any) => { if (e.data?.size > 0) audioChunksRef.current.push(e.data) }
+      mr.onstart = () => append("agent", "Listening via OpenAI (recording)…")
+      mr.start()
+    }).catch((err) => {
+      append("agent", `Microphone error: ${err?.message || err}`)
+    })
   }
   function stopListening() {
     setListening(false)
     logEvent("office:stt_stop", "stop")
+    const mr = mediaRecorderRef.current
+    if (mr) {
+      mr.onstop = async () => {
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+          const base64 = await blobToBase64Safe(blob)
+          const res = await fetch("/api/stt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider: "openai", model: settings?.stt?.model || "gpt-4o-mini-transcribe", audioBase64: base64 }),
+          })
+          const data = await res.json()
+          if (data?.ok && data?.text) {
+            append("user", data.text)
+          } else {
+            append("agent", `STT failed: ${data?.error || "unknown"}`)
+          }
+        } catch (err: any) {
+          append("agent", `STT error: ${err?.message || err}`)
+        } finally {
+          audioChunksRef.current = []
+        }
+      }
+      try { mr.stop() } catch {}
+      mediaRecorderRef.current = null
+    }
   }
   function startSpeaking() {
     setSpeaking(true)
     logEvent("office:tts_start", "start")
-    append("agent", "Speaking (TTS placeholder). We will integrate your TTS HTML here.")
+    const lastAgentMsg = [...messages].reverse().find((m) => m.role === "agent")?.text || "Hello."
+    ;(async () => {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: "openai", model: settings?.tts?.model || "gpt-4o-mini-tts", voiceId: "shimmer", text: lastAgentMsg, format: "mp3" }),
+        })
+        const data = await res.json()
+        if (data?.ok && data?.audioBase64) {
+          const audio = new Audio(`data:audio/mp3;base64,${data.audioBase64}`)
+          audioRef.current = audio
+          audio.play().catch(() => {})
+          append("agent", data?.provider?.includes("elevenlabs") ? "Speaking via ElevenLabs (fallback)…" : "Speaking via OpenAI TTS (Shimmer)…")
+        } else {
+          append("agent", `TTS failed: ${data?.error || "unknown"}`)
+        }
+      } catch (err: any) {
+        append("agent", `TTS error: ${err?.message || err}`)
+      }
+    })()
   }
   function stopSpeaking() {
     setSpeaking(false)
     logEvent("office:tts_stop", "stop")
+    const audio = audioRef.current
+    if (audio) {
+      try { audio.pause(); audio.currentTime = 0 } catch {}
+      audioRef.current = null
+    }
   }
 
+  function beginVoiceAuto() {
+    setVoiceAuto(true)
+    // Setup audio stream + analyser for simple VAD
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      streamRef.current = stream
+      const mr = new MediaRecorder(stream)
+      mediaRecorderRef.current = mr
+      audioChunksRef.current = []
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+      audioCtxRef.current = ctx
+      const source = ctx.createMediaStreamSource(stream)
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 2048
+      analyserRef.current = analyser
+      source.connect(analyser)
+
+      let speakingDetected = false
+      let lastActive = Date.now()
+      const silenceMs = 1500
+      const threshold = 0.02 // simple RMS threshold
+
+      const monitor = () => {
+        const buf = new Uint8Array(analyser.frequencyBinCount)
+        analyser.getByteTimeDomainData(buf)
+        let sum = 0
+        for (let i = 0; i < buf.length; i++) {
+          const v = (buf[i] - 128) / 128
+          sum += v * v
+        }
+        const rms = Math.sqrt(sum / buf.length)
+        const now = Date.now()
+        if (rms > threshold) {
+          speakingDetected = true
+          lastActive = now
+        }
+        if (speakingDetected && now - lastActive > silenceMs) {
+          try { mr.stop() } catch {}
+        } else {
+          if (voiceAuto && mr.state === "recording") requestAnimationFrame(monitor)
+        }
+      }
+
+      mr.onstart = () => {
+        setListening(true)
+        append("agent", "Listening (hands-free)…")
+        requestAnimationFrame(monitor)
+      }
+      mr.ondataavailable = (e: any) => { if (e.data?.size > 0) audioChunksRef.current.push(e.data) }
+      mr.onstop = async () => {
+        setListening(false)
+        // Tear down analyser and stream tracks
+        try { analyser.disconnect() } catch {}
+        try { source.disconnect() } catch {}
+        try { ctx.close() } catch {}
+        audioCtxRef.current = null
+        analyserRef.current = null
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t) => t.stop())
+          streamRef.current = null
+        }
+        try {
+          const blob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+          const base64 = await blobToBase64Safe(blob)
+          const res = await fetch("/api/stt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider: "openai", model: settings?.stt?.model || "gpt-4o-mini-transcribe", audioBase64: base64 }),
+          })
+          const data = await res.json()
+          if (data?.ok && data?.text) {
+            append("user", data.text)
+            await callChatLLM(data.text)
+            // Auto speak the latest reply
+            const lastAgentMsg = [...messages, { role: "user", text: data.text }].reverse().find((m) => m.role === "agent")?.text
+            // Start speaking and when ended, loop if auto
+            ;(async () => {
+              try {
+                const speakRes = await fetch("/api/tts", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ provider: "openai", model: settings?.tts?.model || "gpt-4o-mini-tts", voiceId: "shimmer", text: lastAgentMsg || "", format: "mp3" }),
+                })
+                const speakData = await speakRes.json()
+                if (speakData?.ok && speakData?.audioBase64) {
+                  const audio = new Audio(`data:audio/mp3;base64,${speakData.audioBase64}`)
+                  audioRef.current = audio
+                  audio.onended = () => {
+                    audioRef.current = null
+                    if (voiceAuto) beginVoiceAuto()
+                  }
+                  audio.play().catch(() => {})
+                }
+              } catch {}
+            })()
+          } else {
+            append("agent", `STT failed: ${data?.error || "unknown"}`)
+          }
+        } catch (err: any) {
+          append("agent", `STT error: ${err?.message || err}`)
+        } finally {
+          audioChunksRef.current = []
+        }
+      }
+
+      mr.start()
+    }).catch((err) => {
+      append("agent", `Microphone error: ${err?.message || err}`)
+      setVoiceAuto(false)
+    })
+  }
+
+  function endVoiceAuto() {
+    setVoiceAuto(false)
+    setListening(false)
+    try { mediaRecorderRef.current?.stop() } catch {}
+    mediaRecorderRef.current = null
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+    }
+    if (audioCtxRef.current) {
+      try { audioCtxRef.current.close() } catch {}
+      audioCtxRef.current = null
+    }
+    stopSpeaking()
+  }
   function escalateToWebsiteAgent() {
     logEvent("office:escalate", "bridge_request")
     append(
@@ -160,6 +429,7 @@ export function OfficeAgent() {
               <Badge variant="destructive">Unsafe</Badge>
             )}
             <Badge variant="outline" className="flex items-center gap-1"><IconBolt className="size-4" /> Tools: {activeTools.length}</Badge>
+            <Badge variant="outline" className="flex items-center gap-1"><IconMessage className="size-4" /> Persona: {activePersona ? activePersona.name : "Default"}</Badge>
           </div>
 
           {/* Messages */}
@@ -181,14 +451,20 @@ export function OfficeAgent() {
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
             placeholder="Type a long-form instruction…"
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button onClick={handleSend} className="gap-1">
               <IconMessage className="size-4" /> Send
             </Button>
-            <Button variant={listening ? "secondary" : "outline"} onClick={listening ? stopListening : startListening} className="gap-1">
-              {listening ? <IconMicrophoneOff className="size-4" /> : <IconMicrophone className="size-4" />} {listening ? "Stop" : "Voice"}
+            <Button variant={voiceAuto ? "secondary" : "outline"} onClick={voiceAuto ? endVoiceAuto : beginVoiceAuto} className="gap-1">
+              {voiceAuto ? <IconMicrophoneOff className="size-4" /> : <IconMicrophone className="size-4" />} {voiceAuto ? "Touchless: ON" : "Touchless Voice"}
             </Button>
             <Button variant={speaking ? "secondary" : "outline"} onClick={speaking ? stopSpeaking : startSpeaking} className="gap-1">
               {speaking ? <IconPlayerStop className="size-4" /> : <IconPlayerPlay className="size-4" />} {speaking ? "Stop" : "Speak"}

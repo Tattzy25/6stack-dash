@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyIcon, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { useGlobalControl } from "@/components/global-control-provider"
 import { ActivityFeed, type ActivityItem } from "@/components/activity-feed"
 
@@ -44,7 +44,7 @@ export function ActivityManager({ sessions = [], feed = [] }: ActivityManagerPro
             </div>
           ) : (
             <Empty className="border mt-6">
-              <EmptyIcon />
+              <EmptyMedia variant="icon" />
               <EmptyHeader>
                 <EmptyTitle>No active sessions</EmptyTitle>
                 <EmptyDescription>Sessions will appear here when users are online.</EmptyDescription>
