@@ -67,7 +67,7 @@ export function GlobalControlProvider({ children }: { children: React.ReactNode 
   const [impersonationUser, setImpersonationUser] = useState<string | null>(null)
   const [events, setEvents] = useState<ActivityItem[]>([])
 
-  // rehydrate from storage
+  // Load settings from localStorage
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY)

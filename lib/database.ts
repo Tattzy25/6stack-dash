@@ -13,7 +13,8 @@ if (!databaseUrl) {
 const sql = neon(databaseUrl);
 
 // Create Drizzle ORM instance with schema
-const db = drizzle({ client: sql, schema });
+// @ts-ignore - Drizzle/neon version compatibility
+const db = drizzle(sql, { schema });
 
 // Database connection utilities
 export const checkDatabaseConnection = async (): Promise<boolean> => {
@@ -50,7 +51,7 @@ export const runMigrations = async (): Promise<void> => {
       
       for (const statement of statements) {
         if (statement.trim()) {
-          await sql(statement);
+          await sql.query(statement);
         }
       }
       
@@ -86,3 +87,6 @@ export const healthCheck = async () => {
 // Export the database instance and utilities
 export { sql, db };
 export default db;
+
+// Client-safe exports (excludes server-only functions like runMigrations)
+export const clientExports = { sql, db, checkDatabaseConnection, healthCheck };

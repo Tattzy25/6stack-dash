@@ -13,6 +13,7 @@ import {
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
+  IconPackage,
   IconReport,
   IconSearch,
   IconSettings,
@@ -47,6 +48,7 @@ const data = {
     { title: "Content & Media Management", url: "/content", icon: IconFolder },
     { title: "Session & Activity Logs", url: "/activity", icon: IconListDetails },
     { title: "Analytics & Data Insights", url: "/analytics", icon: IconChartBar },
+    { title: "Batches", url: "/batches", icon: IconPackage },
     { title: "Office", url: "/office", icon: IconRobot },
     { title: "Intelligence Settings", url: "/intelligence", icon: IconDashboard },
     { title: "Marketplace / Payments & Tokens", url: "/marketplace", icon: IconDatabase },
@@ -71,9 +73,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const items = React.useMemo(() => {
     return data.navMain.filter((item) => {
-      const key = item.url.replace(/^\//, "") as keyof typeof featureFlags
+      const key = item.url.replace(/^\//, "")
+      // Dashboard is always visible
       if (key === "dashboard") return true
-      return featureFlags[key] !== false
+      // Check if feature flag exists and is enabled
+      return featureFlags[key as keyof typeof featureFlags] !== false
     })
   }, [featureFlags])
 
