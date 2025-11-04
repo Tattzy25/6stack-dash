@@ -49,7 +49,6 @@ const data = {
     { title: "Session & Activity Logs", url: "/activity", icon: IconListDetails },
     { title: "Analytics & Data Insights", url: "/analytics", icon: IconChartBar },
     { title: "Batches", url: "/batches", icon: IconPackage },
-    { title: "Office", url: "/office", icon: IconRobot },
     { title: "Intelligence Settings", url: "/intelligence", icon: IconDashboard },
     { title: "Marketplace / Payments & Tokens", url: "/marketplace", icon: IconDatabase },
     { title: "Marketing & Engagement", url: "/marketing", icon: IconCamera },

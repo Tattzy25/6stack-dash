@@ -14,7 +14,6 @@ const NAV_ITEMS = [
   { title: "Content & Media Management", href: "/content" },
   { title: "Session & Activity Logs", href: "/activity" },
   { title: "Analytics & Data Insights", href: "/analytics" },
-  { title: "Office", href: "/office" },
   { title: "Intelligence Settings", href: "/intelligence" },
   { title: "Marketplace / Payments & Tokens", href: "/marketplace" },
   { title: "Marketing & Engagement", href: "/marketing" },

@@ -3,7 +3,6 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ModeToggle } from "@/components/mode-toggle"
 import { CommandMenu } from "@/components/command-menu"
-import { OfficeWidget } from "@/components/office-widget"
 
 export function SiteHeader({ title = "Documents" }: { title?: string }) {
   return (
@@ -16,7 +15,6 @@ export function SiteHeader({ title = "Documents" }: { title?: string }) {
         />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
-          <OfficeWidget />
           <CommandMenu />
           <ModeToggle />
         </div>

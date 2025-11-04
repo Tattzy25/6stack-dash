@@ -5,19 +5,27 @@ import { KpiCards } from "@/components/kpi-cards"
 import { ActivityFeed } from "@/components/activity-feed"
 import { QuickActions } from "@/components/quick-actions"
 import { CommandCenter } from "@/components/command-center"
-import { getDashboardKPIs, getActivityFeed } from "@/lib/server-data"
 import { Suspense } from "react"
 
-async function DashboardContent() {
-  // Fetch real data from database
-  const kpiData = await getDashboardKPIs()
-  const activityData = await getActivityFeed(50)
+// Mock data since database has been erased
+const mockKpiData = {
+  totalUsers: 0,
+  activeSessions: 0,
+  imagesGenerated: 0,
+  sales: 0,
+  tokensLeft: 0,
+  currency: 'USD',
+}
 
+const mockActivityData = []
+
+async function DashboardContent() {
+  // Use mock data since database has been erased
   return (
     <>
       <CommandCenter />
-      <KpiCards {...kpiData} />
-      <ActivityFeed items={activityData} />
+      <KpiCards {...mockKpiData} />
+      <ActivityFeed items={mockActivityData} />
       <QuickActions />
     </>
   )
