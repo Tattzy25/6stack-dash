@@ -63,11 +63,12 @@ export function AnalyticsOverview() {
   return (
     <div className="px-4 lg:px-6 grid grid-cols-1 gap-4">
       <KpiCards
-        totalUsers={totals?.totalUsers}
-        imagesGenerated={totals?.imagesGenerated}
+        totalKeyholders={totals?.totalKeyholders}
+        ideasGenerated={totals?.ideasGenerated}
+        contentItems={totals?.contentItems}
         activeSessions={totals?.activeSessions}
-        sales={totals?.sales}
-        tokensLeft={totals?.tokensLeft}
+        totalRequests={totals?.totalRequests}
+        tokensUsed={totals?.tokensUsed}
         currency={totals?.currency}
       />
 
