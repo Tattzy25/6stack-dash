@@ -7,6 +7,7 @@ export type KpiCardsProps = {
   activeSessions?: number
   totalRequests?: number
   tokensUsed?: number
+  costUsd?: number
   currency?: string
 }
 
@@ -17,44 +18,51 @@ export function KpiCards({
   activeSessions = 0,
   totalRequests = 0,
   tokensUsed = 0,
+  costUsd = 0,
   currency = "USD",
 }: KpiCardsProps) {
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-3 @7xl/main:grid-cols-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 px-4 lg:px-6">
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Keyholders</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{totalKeyholders}</CardTitle>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(totalKeyholders).toLocaleString()}</CardTitle>
         </CardHeader>
       </Card>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Ideas Generated</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{ideasGenerated}</CardTitle>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(ideasGenerated).toLocaleString()}</CardTitle>
         </CardHeader>
       </Card>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Content Items</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{contentItems}</CardTitle>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(contentItems).toLocaleString()}</CardTitle>
         </CardHeader>
       </Card>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Active Sessions</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{activeSessions}</CardTitle>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(activeSessions).toLocaleString()}</CardTitle>
         </CardHeader>
       </Card>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Requests</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{totalRequests}</CardTitle>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(totalRequests).toLocaleString()}</CardTitle>
         </CardHeader>
       </Card>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Tokens Used</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">{tokensUsed}</CardTitle>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(tokensUsed).toLocaleString()}</CardTitle>
+        </CardHeader>
+      </Card>
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>Cost ({currency})</CardDescription>
+          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">{Number(costUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</CardTitle>
         </CardHeader>
       </Card>
     </div>

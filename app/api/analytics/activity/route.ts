@@ -10,35 +10,36 @@ export async function GET() {
     const recentRequests = await getRecentRequests(20);
     
     // Transform data for the frontend
-    const activityData = sessionActivity.map(session => ({
+    const activityData = sessionActivity.map((session: any) => ({
       id: session.session_id,
       type: 'session_activity',
-      keyholder: session.keyholder_id || 'Anonymous',
+      keyholder: 'Anonymous',
       timestamp: session.last_activity_at || session.started_at,
       details: `Session ${session.status} with ${session.total_requests} requests`,
       metadata: {
         session_id: session.session_id,
         status: session.status,
         total_requests: session.total_requests,
-        total_tokens_used: session.total_tokens_used,
-        recent_requests: session.recent_requests
+        total_output_chars: session.total_output_chars,
+        total_response_time_ms: session.total_response_time_ms,
       }
     }));
     
     // Add recent requests as activity items
-    const requestActivity = recentRequests.map(request => ({
+    const requestActivity = recentRequests.map((request: any) => ({
       id: `request-${request.id}`,
       type: 'request_processed',
-      keyholder: request.keyholder_id || 'System',
+      keyholder: 'System',
       timestamp: request.created_at,
-      details: `${request.action_type} request ${request.status}`,
+      details: `${request.action_type} request ${request.was_successful ? 'success' : 'failure'}`,
       metadata: {
         request_id: request.id,
+        session_id: request.session_id,
         action_type: request.action_type,
-        tokens_used: request.tokens_used,
-        processing_time: request.processing_time_ms,
-        content_title: request.content_title,
-        content_type: request.content_type
+        response_time_ms: request.response_time_ms,
+        input_char_count: request.input_char_count,
+        output_char_count: request.output_char_count,
+        was_successful: request.was_successful,
       }
     }));
     

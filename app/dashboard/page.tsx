@@ -8,13 +8,18 @@ import { CommandCenter } from "@/components/command-center"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DashboardGrid } from "@/components/dashboard-grid"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Suspense } from "react"
+import { headers } from "next/headers"
 
 // Real data integration with the new ask_tattty schema - NO FALLBACKS
 async function getDashboardData() {
   try {
-    const response = await fetch('http://localhost:4000/api/analytics/overview', {
+    const hdrs = await headers()
+    const proto = hdrs.get('x-forwarded-proto') ?? 'http'
+    const host = hdrs.get('host') ?? 'localhost:4100'
+    const baseUrl = `${proto}://${host}`
+
+    const response = await fetch(`${baseUrl}/api/analytics/overview`, {
       next: { revalidate: 10 } // Revalidate every 10 seconds for real-time data
     })
     
@@ -29,7 +34,7 @@ async function getDashboardData() {
     }
     
     // Get recent activity from session logs
-    const activityResponse = await fetch('http://localhost:4000/api/analytics/activity', {
+    const activityResponse = await fetch(`${baseUrl}/api/analytics/activity`, {
       next: { revalidate: 10 }
     })
     
@@ -56,79 +61,42 @@ async function DashboardContent() {
 
   return (
     <div className="space-y-6">
-      {/* Professional Dashboard Header and Metrics */}
+      {/* Clean header and compact KPIs */}
       <DashboardGrid data={data} />
 
-      {/* Tabbed Interface */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-        </TabsList>
+      {/* Overview content only (analytics lives under /analytics, logs under /activity) */}
+      <div className="space-y-6">
+        <KpiCards {...data} />
 
-        <TabsContent value="overview" className="space-y-6">
-          {/* KPI Cards */}
-          <KpiCards {...data} />
-
-          {/* Charts and Activity Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Usage Trends</CardTitle>
-                <CardDescription>
-                  Platform activity over time
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartAreaInteractive />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>
-                  Latest actions from keyholders
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ActivityFeed items={data.recentActivity} />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <QuickActions />
-        </TabsContent>
-
-        <TabsContent value="analytics">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Advanced Analytics</CardTitle>
+              <CardTitle>Usage Trends</CardTitle>
               <CardDescription>
-                Detailed performance metrics and insights
+                Platform activity over time
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">📊</div>
-                <h3 className="text-lg font-semibold mb-2">Analytics Dashboard</h3>
-                <p className="text-muted-foreground">
-                  Comprehensive analytics coming soon with detailed charts,
-                  filters, and export capabilities.
-                </p>
-              </div>
+              <ChartAreaInteractive />
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="activity">
-          <ActivityFeed items={data.recentActivity} />
-        </TabsContent>
-      </Tabs>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>
+                Latest actions from keyholders
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed items={data.recentActivity} />
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Command Center */}
+        <QuickActions />
+      </div>
+
       <CommandCenter />
     </div>
   )
